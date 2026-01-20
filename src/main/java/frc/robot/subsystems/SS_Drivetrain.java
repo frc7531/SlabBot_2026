@@ -109,13 +109,16 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
 
     Pose2d robotSimPose;
     Pose2d robotOdoPose;
-    Pose2d robotLLPose;
+    Pose2d robotLLPoseAntigua;
+    Pose2d robotLLPoseBarbuda;
     NetworkTable poseTable = NetworkTableInstance.getDefault().getTable("estimations");
     StructPublisher<Pose2d> posePublisher = poseTable.getStructTopic("poseEstimate", Pose2d.struct).publish();
     Field2d estimatedField = new Field2d();
-    Field2d limelightField = new Field2d();
+    Field2d limelightFieldBarbuda = new Field2d();
+    Field2d limelightFieldAntigua = new Field2d();
     Field2d odometryField = new Field2d();
-    double[] limelightEstimate = new double[6];
+    double[] limelightEstimateAntigua = new double[6];
+    double[] limelightEstimateBarbuda = new double[6];
     double stdDev;
     Rotation2d gyroAngle;
     double gyroSpeed;
@@ -186,8 +189,10 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
     /* The SysId routine to test */
     private SysIdRoutine m_sysIdRoutineToApply = m_sysIdRoutineTranslation;
 
-    NetworkTable limelightTable = NetworkTableInstance.getDefault().getTable("limelight");
-    double[] poseEstimate;
+    NetworkTable limelightTableAntigua = NetworkTableInstance.getDefault().getTable("limelight-antigua");
+    NetworkTable limelightTableBarbuda = NetworkTableInstance.getDefault().getTable("limelight-barbuda");
+    double[] poseEstimateAntigua;
+    double[] poseEstimateBarbuda;
 
     /**
      * Constructs a CTRE SwerveDrivetrain using the specified constants.
@@ -212,7 +217,8 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
             startSimThread();
         }
 
-        poseEstimate = limelightTable.getEntry("botpose_orb_wpiblue").getDoubleArray(new double[6]);
+        poseEstimateAntigua = limelightTableAntigua.getEntry("botpose_orb_wpiblue").getDoubleArray(new double[6]);
+        poseEstimateBarbuda = limelightTableBarbuda.getEntry("botpose_orb_wpiblue").getDoubleArray(new double[6]);
     }
 
     /**
@@ -309,6 +315,7 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
     public Command sysIdDynamic(SysIdRoutine.Direction direction) {
         return m_sysIdRoutineToApply.dynamic(direction);
     }
+    Field2d testing;
 
     @Override
     public void periodic() {
@@ -332,7 +339,35 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
                 m_hasAppliedOperatorPerspective = true;
             });
         }
+        modulePositions[0] = module0.getPosition(true);
+        modulePositions[1] = module1.getPosition(true);
+        modulePositions[2] = module2.getPosition(true);
+        modulePositions[3] = module3.getPosition(true);
 
+        poseEstimator.update(pidgey.getRotation2d(), modulePositions);
+        poseOdometry.update(pidgey.getRotation2d(), modulePositions);
+        robotSimPose = poseEstimator.getEstimatedPosition();
+
+        limelightEstimateAntigua = limelightTableAntigua.getEntry("botpose_orb_wpiblue").getDoubleArray(limelightEstimateAntigua);
+        limelightEstimateBarbuda = limelightTableBarbuda.getEntry("botpose_orb_wpiblue").getDoubleArray(limelightEstimateBarbuda);
+        robotLLPoseAntigua = new Pose2d(limelightEstimateAntigua[0], limelightEstimateAntigua[1], new Rotation2d(Math.PI*limelightEstimateAntigua[5]/180));
+        robotLLPoseBarbuda = new Pose2d(limelightEstimateBarbuda[0], limelightEstimateBarbuda[1], new Rotation2d(Math.PI*limelightEstimateBarbuda[5]/180));
+        robotOdoPose = poseOdometry.getPoseMeters();
+
+        updateVisionFromLimelight("limelight-barbuda");
+        updateVisionFromLimelight("limelight-antigua");
+
+        //Put the poses on the fields
+        estimatedField.setRobotPose(robotSimPose);
+        limelightFieldAntigua.setRobotPose(robotLLPoseAntigua);
+        limelightFieldBarbuda.setRobotPose(robotLLPoseBarbuda);
+        odometryField.setRobotPose(robotOdoPose);
+
+        //Add the fields
+        SmartDashboard.putData("estimationField", estimatedField);
+        SmartDashboard.putData("limelightFieldAntigua", limelightFieldAntigua);
+        SmartDashboard.putData("limelightFieldBarbuda", limelightFieldBarbuda);
+        SmartDashboard.putData("odometryField", odometryField);
     }
 
     private void startSimThread() {
@@ -408,75 +443,91 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
         return run(() -> this.pidgey.setYaw(0));
     }
 
-    public void updateOdometry() {
-        //Increment the loop count
-        loopCount++;
-
-        if (loopCount == 4) {
-            loopCount = 0;
-
-            //Get the Pigeon orientation and speed
-            gyroAngle = pidgey.getRotation2d();
-            gyroSpeed = pidgey.getAngularVelocityZDevice().getValueAsDouble();
-
-            //Update and access the vision estimation
-            LimelightHelpers.SetRobotOrientation("limelight", gyroAngle.getDegrees(), gyroSpeed, 0, 0, 0, 0);
-            LimelightHelpers.PoseEstimate megaTag2 = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight");
-
-            //Update with odometry first
-            modulePositions[0] = module0.getPosition(true);
-            modulePositions[1] = module1.getPosition(true);
-            modulePositions[2] = module2.getPosition(true);
-            modulePositions[3] = module3.getPosition(true);
-            
-            //Updating a pure odometry as well to compare for testing
-            poseEstimator.update(gyroAngle, modulePositions);
-            poseOdometry.update(gyroAngle, modulePositions);
-
-            //Update vision stuff if we can
-            //Don't update if the angular velocity is too high or we don't see any tags.
-            if((Math.abs(pidgey.getAngularVelocityZDevice().getValueAsDouble()) < 720) && (megaTag2.tagCount != 0))
-            {
-                stdDev = MathUtil.clamp(1.05*megaTag2.avgTagDist/megaTag2.tagCount, 0.15, 1.1);
-                Pose2d poseCorrection = new Pose2d(megaTag2.pose.getTranslation(), gyroAngle); //Ignore the rotation part of vision
-                poseEstimator.setVisionMeasurementStdDevs(VecBuilder.fill(stdDev, stdDev, 0.5));
-                poseEstimator.addVisionMeasurement(
-                poseCorrection,
-                megaTag2.timestampSeconds);
-            }
-
-            // System.out.println("FL dist " + modulePositions[0].distanceMeters);
-            // System.out.println("angle " + modulePositions[0].angle.getDegrees());
-            // System.out.println("pigeon " + pidgey.getYaw().getValueAsDouble());
-            // System.out.println("module position " + getModule(0).getPosition(true).angle.getDegrees());
-            // System.out.println("poseEstimate " + poseEstimator.getEstimatedPosition().toString());
-
-            //Access the poses for each method
-            robotSimPose = poseEstimator.getEstimatedPosition();
-
-            limelightEstimate = limelightTable.getEntry("botpose_orb_wpiblue").getDoubleArray(limelightEstimate);
-            
-            robotLLPose = new Pose2d(limelightEstimate[0], limelightEstimate[1], new Rotation2d(Math.PI*limelightEstimate[5]/180));
-
-            robotOdoPose = poseOdometry.getPoseMeters();
-
-            // poseTable.getEntry("robotPose").setValue(robotSimPose);
-            // posePublisher.set(robotSimPose);
-
-            //Put the poses on the fields
-            estimatedField.setRobotPose(robotSimPose);
-            limelightField.setRobotPose(robotLLPose);
-            odometryField.setRobotPose(robotOdoPose);
-
-            //Add the fields
-            SmartDashboard.putData("estimationField", estimatedField);
-            SmartDashboard.putData("limelightField", limelightField);
-            SmartDashboard.putData("odometryField", odometryField);
-            
-            //Other variables
-            // SmartDashboard.putNumber("limelightDistance", limelightTable.getEntry("botpose_orb_wpiblue").getDoubleArray(new double[11])[9]);
-            // SmartDashboard.putNumberArray("limelightPose", limelightEstimate);
-            // SmartDashboard.putString("odometry", robotOdoPose.toString());
-        }
+    private void updateVisionFromLimelight(String limelightName) {
+        LimelightHelpers.SetRobotOrientation(limelightName, 
+            pidgey.getRotation2d().getDegrees(), 
+            pidgey.getAngularVelocityZDevice().getValueAsDouble(), 0, 0, 0, 0);
+        
+        LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelightName);
+        
+        if (mt2 == null || mt2.tagCount == 0) return;
+        if (Math.abs(pidgey.getAngularVelocityZDevice().getValueAsDouble()) > 720) return; // Reject during fast rotation
+        
+        stdDev = MathUtil.clamp(1.05*mt2.avgTagDist/mt2.tagCount, 0.15, 1.1);
+        poseEstimator.setVisionMeasurementStdDevs(VecBuilder.fill(stdDev, stdDev, 0.5));
+        poseEstimator.addVisionMeasurement(mt2.pose, mt2.timestampSeconds);
     }
+
+    // public void updateOdometry() {
+    //     //Increment the loop count
+    //     loopCount++;
+
+    //     if (loopCount == 4) {
+    //         loopCount = 0;
+
+    //         //Get the Pigeon orientation and speed
+    //         gyroAngle = pidgey.getRotation2d();
+    //         gyroSpeed = pidgey.getAngularVelocityZDevice().getValueAsDouble();
+
+    //         //Update and access the vision estimation
+    //         LimelightHelpers.SetRobotOrientation("limelight-antigua", gyroAngle.getDegrees(), gyroSpeed, 0, 0, 0, 0);
+    //         LimelightHelpers.PoseEstimate megaTag2Antigua = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight-antigua");
+    //         LimelightHelpers.PoseEstimate megaTag2Barbuda = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight-barbuda");
+
+    //         //Update with odometry first
+    //         modulePositions[0] = module0.getPosition(true);
+    //         modulePositions[1] = module1.getPosition(true);
+    //         modulePositions[2] = module2.getPosition(true);
+    //         modulePositions[3] = module3.getPosition(true);
+            
+    //         //Updating a pure odometry as well to compare for testing
+    //         poseEstimator.update(gyroAngle, modulePositions);
+    //         poseOdometry.update(gyroAngle, modulePositions);
+
+    //         //Update vision stuff if we can
+    //         //Don't update if the angular velocity is too high or we don't see any tags.
+    //         if((Math.abs(pidgey.getAngularVelocityZDevice().getValueAsDouble()) < 720) && (megaTag2Antigua.tagCount != 0))
+    //         {
+    //             stdDev = MathUtil.clamp(1.05*megaTag2Antigua.avgTagDist/megaTag2Antigua.tagCount, 0.15, 1.1);
+    //             Pose2d poseCorrection = new Pose2d(megaTag2Antigua.pose.getTranslation(), gyroAngle); //Ignore the rotation part of vision
+    //             poseEstimator.setVisionMeasurementStdDevs(VecBuilder.fill(stdDev, stdDev, 0.5));
+    //             poseEstimator.addVisionMeasurement(
+    //             poseCorrection,
+    //             megaTag2Antigua.timestampSeconds);
+    //         }
+
+    //         // System.out.println("FL dist " + modulePositions[0].distanceMeters);
+    //         // System.out.println("angle " + modulePositions[0].angle.getDegrees());
+    //         // System.out.println("pigeon " + pidgey.getYaw().getValueAsDouble());
+    //         // System.out.println("module position " + getModule(0).getPosition(true).angle.getDegrees());
+    //         // System.out.println("poseEstimate " + poseEstimator.getEstimatedPosition().toString());
+
+    //         //Access the poses for each method
+    //         robotSimPose = poseEstimator.getEstimatedPosition();
+
+    //         limelightEstimate = limelightTableAntigua.getEntry("botpose_orb_wpiblue").getDoubleArray(limelightEstimate);
+            
+    //         robotLLPose = new Pose2d(limelightEstimate[0], limelightEstimate[1], new Rotation2d(Math.PI*limelightEstimate[5]/180));
+
+    //         robotOdoPose = poseOdometry.getPoseMeters();
+
+    //         // poseTable.getEntry("robotPose").setValue(robotSimPose);
+    //         // posePublisher.set(robotSimPose);
+
+    //         //Put the poses on the fields
+    //         estimatedField.setRobotPose(robotSimPose);
+    //         limelightField.setRobotPose(robotLLPose);
+    //         odometryField.setRobotPose(robotOdoPose);
+
+    //         //Add the fields
+    //         SmartDashboard.putData("estimationField", estimatedField);
+    //         SmartDashboard.putData("limelightField", limelightField);
+    //         SmartDashboard.putData("odometryField", odometryField);
+            
+    //         //Other variables
+    //         // SmartDashboard.putNumber("limelightDistance", limelightTable.getEntry("botpose_orb_wpiblue").getDoubleArray(new double[11])[9]);
+    //         // SmartDashboard.putNumberArray("limelightPose", limelightEstimate);
+    //         // SmartDashboard.putString("odometry", robotOdoPose.toString());
+    //     }
+    // }
 }

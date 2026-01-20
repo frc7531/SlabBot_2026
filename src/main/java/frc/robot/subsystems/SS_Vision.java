@@ -11,24 +11,35 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 public class SS_Vision extends SubsystemBase {
   /** Creates a new SS_Vision. */
 
-  NetworkTable limelightTable = NetworkTableInstance.getDefault().getTable("limelight");
+  NetworkTable limelightTableAntigua = NetworkTableInstance.getDefault().getTable("limelight-antigua");
+  NetworkTable limelightTableBarbuda = NetworkTableInstance.getDefault().getTable("limelight-barbuda");
 
-  double[] poseEstimate;
+  double[] poseEstimateAntigua;
+  double[] poseEstimateBarbuda;
 
   public SS_Vision() {
-    poseEstimate = limelightTable.getEntry("botpose_orb_wpiblue").getDoubleArray(new double[6]);
+    poseEstimateAntigua = limelightTableAntigua.getEntry("botpose_orb_wpiblue").getDoubleArray(new double[6]);
+    poseEstimateBarbuda = limelightTableBarbuda.getEntry("botpose_orb_wpiblue").getDoubleArray(new double[6]);
   }
 
   public void setVariables() {
-    limelightTable = NetworkTableInstance.getDefault().getTable("limelight");
+    limelightTableAntigua = NetworkTableInstance.getDefault().getTable("limelight-antigua");
+    limelightTableBarbuda = NetworkTableInstance.getDefault().getTable("limelight-barbuda");
 
-    if (limelightTable != null) {
-      poseEstimate = limelightTable.getEntry("botpose_orb_wpiblue").getDoubleArray(poseEstimate);
+    if (limelightTableAntigua != null) {
+      poseEstimateAntigua = limelightTableAntigua.getEntry("botpose_orb_wpiblue").getDoubleArray(poseEstimateAntigua);
+    }
+    if (limelightTableBarbuda != null) {
+      poseEstimateBarbuda = limelightTableBarbuda.getEntry("botpose_orb_wpiblue").getDoubleArray(poseEstimateBarbuda);
     }
   }
 
-  public double[] getPoseEstimate() {
-    return poseEstimate;
+  public double[] getPoseEstimateAntigua() {
+    return poseEstimateAntigua;
+  }
+
+  public double[] getPoseEstimateBarbuda() {
+    return poseEstimateBarbuda;
   }
 
   @Override

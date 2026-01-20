@@ -38,7 +38,7 @@ public class RobotContainer {
 
     public final SS_Vision vision = new SS_Vision();
     public final SS_Drivetrain drivetrain = TunerConstants.createDrivetrain();
-    public aimTowardsTarget aimCommand = new aimTowardsTarget(vision, drivetrain);
+    public aimTowardsTarget aimCommand = new aimTowardsTarget(vision, drivetrain, joystick);
     public Command drivetrainDefault = drivetrain.applyRequest(() ->
         drive.withVelocityX(-joystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
              .withVelocityY(-joystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
@@ -58,8 +58,6 @@ public class RobotContainer {
             // Drivetrain will execute this command periodically
             drivetrainDefault
         );
-
-        // vision.setDefaultCommand(aimCommand);
 
         // Idle while the robot is disabled. This ensures the configured
         // neutral mode is applied to the drive motors while disabled.
