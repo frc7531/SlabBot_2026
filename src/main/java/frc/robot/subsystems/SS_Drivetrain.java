@@ -128,6 +128,8 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
     SwerveModule module2 = getModule(2);
     SwerveModule module3 = getModule(3);
 
+    public DriverStation.Alliance alliance;
+
     /*
      * SysId routine for characterizing translation. This is used to find PID gains
      * for the drive motors.
@@ -219,6 +221,7 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
 
         poseEstimateAntigua = limelightTableAntigua.getEntry("botpose_orb_wpiblue").getDoubleArray(new double[6]);
         poseEstimateBarbuda = limelightTableBarbuda.getEntry("botpose_orb_wpiblue").getDoubleArray(new double[6]);
+        alliance = DriverStation.getAlliance().get();
     }
 
     /**
@@ -339,6 +342,9 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
                 m_hasAppliedOperatorPerspective = true;
             });
         }
+
+
+
         modulePositions[0] = module0.getPosition(true);
         modulePositions[1] = module1.getPosition(true);
         modulePositions[2] = module2.getPosition(true);
