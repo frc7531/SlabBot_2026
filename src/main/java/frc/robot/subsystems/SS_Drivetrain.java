@@ -354,8 +354,15 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
         poseOdometry.update(pidgey.getRotation2d(), modulePositions);
         robotSimPose = poseEstimator.getEstimatedPosition();
 
-        limelightEstimateAntigua = limelightTableAntigua.getEntry("botpose_orb_wpiblue").getDoubleArray(limelightEstimateAntigua);
-        limelightEstimateBarbuda = limelightTableBarbuda.getEntry("botpose_orb_wpiblue").getDoubleArray(limelightEstimateBarbuda);
+        switch (alliance) {
+            case Red:
+                limelightEstimateAntigua = limelightTableAntigua.getEntry("botpose_orb_wpired").getDoubleArray(limelightEstimateAntigua);
+                limelightEstimateBarbuda = limelightTableBarbuda.getEntry("botpose_orb_wpired").getDoubleArray(limelightEstimateBarbuda);
+            case Blue:
+                limelightEstimateAntigua = limelightTableAntigua.getEntry("botpose_orb_wpiblue").getDoubleArray(limelightEstimateAntigua);
+                limelightEstimateBarbuda = limelightTableBarbuda.getEntry("botpose_orb_wpiblue").getDoubleArray(limelightEstimateBarbuda);
+        }
+
         robotLLPoseAntigua = new Pose2d(limelightEstimateAntigua[0], limelightEstimateAntigua[1], new Rotation2d(Math.PI*limelightEstimateAntigua[5]/180));
         robotLLPoseBarbuda = new Pose2d(limelightEstimateBarbuda[0], limelightEstimateBarbuda[1], new Rotation2d(Math.PI*limelightEstimateBarbuda[5]/180));
         robotOdoPose = poseOdometry.getPoseMeters();

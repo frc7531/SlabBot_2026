@@ -16,9 +16,10 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
-import frc.robot.commands.vision.aimTowardsTarget;
+import frc.robot.commands.vision.aimTurretToTarget;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.SS_Drivetrain;
+import frc.robot.subsystems.SS_Turret;
 import frc.robot.subsystems.SS_Vision;
 
 public class RobotContainer {
@@ -38,7 +39,8 @@ public class RobotContainer {
 
     public final SS_Vision vision = new SS_Vision();
     public final SS_Drivetrain drivetrain = TunerConstants.createDrivetrain();
-    public aimTowardsTarget aimCommand = new aimTowardsTarget(vision, drivetrain, joystick);
+    public final SS_Turret turret = new SS_Turret();
+    public aimTurretToTarget aimCommand = new aimTurretToTarget(drivetrain, turret, joystick);
     public Command drivetrainDefault = drivetrain.applyRequest(() ->
         drive.withVelocityX(-joystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
              .withVelocityY(-joystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
@@ -56,7 +58,7 @@ public class RobotContainer {
         // and Y is defined as to the left according to WPILib convention.
         drivetrain.setDefaultCommand(
             // Drivetrain will execute this command periodically
-            aimCommand
+            drivetrainDefault
         );
 
         // Idle while the robot is disabled. This ensures the configured
