@@ -11,7 +11,6 @@ import frc.robot.subsystems.SS_Shooter;
 
 /* You should consider using the more terse Command factories API instead https://docs.wpilib.org/en/stable/docs/software/commandbased/organizing-command-based.html#defining-commands */
 public class aim_startShooter extends Command {
-  public final double shooterMaxSpeed = 17.5; //Theoretical, not gonna be exact yet
   public SS_Shooter shooter;
   public SS_Drivetrain drivetrain;
 
