@@ -21,10 +21,10 @@ import frc.robot.subsystems.SS_Vision;
 /* You should consider using the more terse Command factories API instead https://docs.wpilib.org/en/stable/docs/software/commandbased/organizing-command-based.html#defining-commands */
 public class alignTower extends Command {
 
-  public SS_Vision ss_vision;
+  public SS_Vision vision;
   public RobotContainer robotContainer;
   public SS_Drivetrain drivetrain;
-  SwerveRequest.FieldCentric drive = robotContainer.drive;
+  SwerveRequest.RobotCentric drive = new SwerveRequest.RobotCentric();
   NetworkTable limelightTableBarbuda = NetworkTableInstance.getDefault().getTable("limelight-barbuda");
   Translation2d estimatedPose;
 
@@ -32,23 +32,25 @@ public class alignTower extends Command {
   PIDController xController = new PIDController(0.1, 0, 0);
   PIDController yController = new PIDController(0.1, 0, 0);
 
-  Translation2d blueTowerPose = new Translation2d(1.106424, 3.745484);
-  Translation2d redTowerPose = new Translation2d(15.434564, 4.323842 );
   Translation2d targetPose;
   Translation2d poseDifference;
   Double targetXPoseDifference;
   Double targetYPoseDifference;
+
   Rotation2d targetAngle;
   Rotation2d currentAngle;
   Rotation2d angleDifference;
+
   double rSpeed;
   double xSpeed;
   double ySpeed;
 
   /** Creates a new alignTower. */
-  public alignTower(SS_Vision vision, SS_Drivetrain drivetrain) {
+  public alignTower(SS_Vision ss_vision, SS_Drivetrain ss_drivetrain) {
     // Use addRequirements() here to declare subsystem dependencies.
-    addRequirements(vision, drivetrain);
+    addRequirements(ss_vision);
+    this.vision = ss_vision;
+    this.drivetrain = ss_drivetrain;
   }
 
   // Called when the command is initially scheduled.
@@ -59,24 +61,23 @@ public class alignTower extends Command {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    switch (drivetrain.alliance) {
-      case Red:
-        targetPose = redTowerPose;
-      case Blue:
-        targetPose = blueTowerPose;
-    }
+    targetPose = drivetrain.towerPose;
+
     estimatedPose = drivetrain.poseEstimator.getEstimatedPosition().getTranslation();
     poseDifference = targetPose.minus(estimatedPose);
     targetAngle = poseDifference.getAngle();
+
     currentAngle = drivetrain.pidgey.getRotation2d();
     angleDifference = currentAngle.minus(targetAngle);
     targetXPoseDifference = poseDifference.getMeasureY().in(Meters);
     targetYPoseDifference = poseDifference.getMeasureX().in(Meters);
+
     rSpeed = rController.calculate(angleDifference.getDegrees());
     xSpeed = xController.calculate(targetXPoseDifference);
     ySpeed = yController.calculate(targetYPoseDifference);
 
-    drivetrain.applyRequest(() -> drive.withVelocityX(xSpeed)
+    drivetrain.applyRequest(() -> 
+        drive.withVelocityX(xSpeed)
         .withVelocityY(ySpeed)
         .withRotationalRate(rSpeed));
   }

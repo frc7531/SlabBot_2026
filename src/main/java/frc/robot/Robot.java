@@ -34,8 +34,8 @@ public class Robot extends TimedRobot {
 
     @Override
     public void disabledInit() {
-        NetworkTableInstance.getDefault().getTable("limelight-barbuda").getEntry("<throttle_set>").setNumber(150);
-        NetworkTableInstance.getDefault().getTable("limelight-antigua").getEntry("<throttle_set>").setNumber(150);
+        NetworkTableInstance.getDefault().getTable("limelight-barbuda").getEntry("<throttle_set>").setNumber(450);
+        NetworkTableInstance.getDefault().getTable("limelight-antigua").getEntry("<throttle_set>").setNumber(450);
     }
 
     @Override

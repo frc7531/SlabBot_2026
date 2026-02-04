@@ -4,11 +4,12 @@
 
 package frc.robot.commands.vision;
 
+import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.subsystems.SS_Drivetrain;
@@ -20,34 +21,35 @@ public class aimTurretToTarget extends Command {
   public SS_Drivetrain drivetrain;
   public SS_Turret turret;
 
-  PIDController rController = new PIDController(0.1, 0, 0);
+  PIDController rController = new PIDController(3.2, 0.2, 0.002); //0.8
   double pidSpeed;
 
   Translation2d estimatedPose;
 
-  Translation2d blueHubPose = new Translation2d(4.625594, 4.034536);
-  Translation2d redHubPose = new Translation2d(4.625594, 4.034536);
-
   Translation2d targetPose;
   double targetAngle;
 
+  double turretRotations;
   double turretAngle;
+  Translation2d turretEstimate;
 
   Translation2d poseDifference;
-  double angleDifference;
+  double rotationsDifference;
+
+  double newAngle;
 
   public SwerveRequest.RobotCentric driverequest = new SwerveRequest.RobotCentric();
   public CommandXboxController controller;
-  public Encoder encoder;
+  public CANcoder encoder;
 
-  public aimTurretToTarget(SS_Drivetrain ss_drivetrain, SS_Turret ss_turret, CommandXboxController joystick) {
+  public aimTurretToTarget(SS_Drivetrain ss_drivetrain, SS_Turret ss_turret) {
     // Use addRequirements() here to declare subsystem dependencies.
     addRequirements(ss_turret);
-    this.controller = joystick;
+    //this.controller = joystick;
     this.drivetrain = ss_drivetrain;
     this.turret = ss_turret;
     this.encoder = ss_turret.encoder;
-    withInterruptBehavior(InterruptionBehavior.kCancelSelf);
+    //withInterruptBehavior(InterruptionBehavior.kCancelSelf);
   }
 
   // Called when the command is initially scheduled.
@@ -61,23 +63,51 @@ public class aimTurretToTarget extends Command {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    switch (drivetrain.alliance) {
-      case Red:
-        targetPose = redHubPose;
-      case Blue:
-        targetPose = blueHubPose;
-    }
+    targetPose = drivetrain.hubPose;
 
     estimatedPose = drivetrain.poseEstimator.getEstimatedPosition().getTranslation();
+    turretEstimate = estimatedPose.plus(turret.getTurretPosition());
 
-    poseDifference = targetPose.minus(estimatedPose);
+    poseDifference = targetPose.minus(turretEstimate);
     targetAngle = poseDifference.getAngle().getDegrees();
 
-    turretAngle = encoder.getDistance();
-    angleDifference = turretAngle - targetAngle;
-    pidSpeed = rController.calculate(angleDifference);
+    turretRotations = turret.getTurretRotation();
+    turretAngle = 360*turretRotations + drivetrain.poseEstimator.getEstimatedPosition().getRotation().getDegrees();
+    rotationsDifference = (turretAngle - targetAngle)/360;
 
-    turret.setSpeed(pidSpeed);
+    if ((targetAngle + drivetrain.pidgey.getYaw().getValueAsDouble() > 360*turret.leftMaximum) || (targetAngle + drivetrain.pidgey.getYaw().getValueAsDouble() < 360*turret.rightMaximum)) {
+      if (turretAngle >= 0) {
+        if (targetAngle >= 0) {
+          newAngle = targetAngle - 360;
+        } else {
+          newAngle = targetAngle;
+        }
+
+        if (-newAngle < 360*turret.rightMaximum) {
+          rotationsDifference = (turretAngle - 20)/360;
+        }
+      } else {
+        if (targetAngle < 0) {
+          newAngle = targetAngle + 360;
+        } else {
+          newAngle = targetAngle;
+        }
+
+        if (newAngle < 360*turret.leftMaximum) {
+          rotationsDifference = (turretAngle + 20)/360;
+        }
+      }
+    }
+
+    //pidSpeed = rController.calculate(rotationsDifference);
+
+    //turret.setRawSpeed(pidSpeed); //This is the turret's speed
+    SmartDashboard.putNumber("targetAngle", targetAngle);
+    SmartDashboard.putNumber("turretAngle", turretAngle);
+    SmartDashboard.putNumber("newAngle", newAngle);
+    SmartDashboard.putNumber("rotationsDifference", rotationsDifference);
+    //System.out.println("speed: " + pidSpeed);
+    turret.setRawSpeed(0);
   }
 
   // Called once the command ends or is interrupted.

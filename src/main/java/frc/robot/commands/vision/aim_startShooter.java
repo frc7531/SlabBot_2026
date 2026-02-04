@@ -4,19 +4,29 @@
 
 package frc.robot.commands.vision;
 
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.subsystems.SS_Drivetrain;
 import frc.robot.subsystems.SS_Shooter;
 
 /* You should consider using the more terse Command factories API instead https://docs.wpilib.org/en/stable/docs/software/commandbased/organizing-command-based.html#defining-commands */
-public class lowerHood extends Command {
+public class aim_startShooter extends Command {
+  public final double shooterMaxSpeed = 17.5; //Theoretical, not gonna be exact yet
   public SS_Shooter shooter;
+  public SS_Drivetrain drivetrain;
 
-  /** Creates a new lowerHood. */
-  public lowerHood(SS_Shooter ss_shooter) {
+  public double distance;
+  public double hoodAngle;
+  public Translation2d botPose;
+  public Translation2d hubPose;
+  public double targetAngle;
+
+  /** Creates a new startShooter. */
+  public aim_startShooter(SS_Shooter ss_shooter, SS_Drivetrain ss_drivetrain) {
     // Use addRequirements() here to declare subsystem dependencies.
     addRequirements(ss_shooter);
     this.shooter = ss_shooter;
-    withInterruptBehavior(InterruptionBehavior.kCancelSelf);
+    this.drivetrain = ss_drivetrain;
   }
 
   // Called when the command is initially scheduled.
@@ -26,7 +36,13 @@ public class lowerHood extends Command {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    shooter.leftHoodLifter.setPosition(0.01);
+    botPose = drivetrain.poseEstimator.getEstimatedPosition().getTranslation();
+    hubPose = drivetrain.hubPose;
+    distance = botPose.getDistance(hubPose);
+    hoodAngle = shooter.leftHoodLifter.getPosition();
+    targetAngle = shooter.calculateGoalAngle(distance);
+    shooter.setHoodAngle(targetAngle);
+    shooter.setVelocity(distance, hoodAngle);
   }
 
   // Called once the command ends or is interrupted.

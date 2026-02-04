@@ -5,18 +5,17 @@
 package frc.robot.commands.vision;
 
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.subsystems.SS_Shooter;
+import frc.robot.subsystems.SS_Turret;
 
 /* You should consider using the more terse Command factories API instead https://docs.wpilib.org/en/stable/docs/software/commandbased/organizing-command-based.html#defining-commands */
-public class lowerHood extends Command {
-  public SS_Shooter shooter;
+public class stopTurret extends Command {
+  public SS_Turret turret;
 
-  /** Creates a new lowerHood. */
-  public lowerHood(SS_Shooter ss_shooter) {
+  /** Creates a new stopTurret. */
+  public stopTurret(SS_Turret ss_turret) {
     // Use addRequirements() here to declare subsystem dependencies.
-    addRequirements(ss_shooter);
-    this.shooter = ss_shooter;
-    withInterruptBehavior(InterruptionBehavior.kCancelSelf);
+    addRequirements(ss_turret);
+    this.turret = ss_turret;
   }
 
   // Called when the command is initially scheduled.
@@ -26,7 +25,7 @@ public class lowerHood extends Command {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    shooter.leftHoodLifter.setPosition(0.01);
+    turret.setRawSpeed(0);
   }
 
   // Called once the command ends or is interrupted.

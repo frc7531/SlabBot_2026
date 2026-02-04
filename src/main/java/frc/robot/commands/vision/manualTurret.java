@@ -4,29 +4,42 @@
 
 package frc.robot.commands.vision;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.subsystems.SS_Shooter;
+import frc.robot.subsystems.SS_Turret;
 
 /* You should consider using the more terse Command factories API instead https://docs.wpilib.org/en/stable/docs/software/commandbased/organizing-command-based.html#defining-commands */
-public class lowerHood extends Command {
-  public SS_Shooter shooter;
-
-  /** Creates a new lowerHood. */
-  public lowerHood(SS_Shooter ss_shooter) {
+public class manualTurret extends Command {
+  public SS_Turret turret;
+  public double speed;
+  /** Creates a new manualTurret. */
+  public manualTurret(SS_Turret ss_turret) {
     // Use addRequirements() here to declare subsystem dependencies.
-    addRequirements(ss_shooter);
-    this.shooter = ss_shooter;
-    withInterruptBehavior(InterruptionBehavior.kCancelSelf);
+    addRequirements(ss_turret);
+    this.turret = ss_turret;
   }
 
   // Called when the command is initially scheduled.
   @Override
   public void initialize() {}
 
+  public manualTurret withSpeed(double inputSpeed) {
+    speed = inputSpeed;
+    return this;
+  }
+
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    shooter.leftHoodLifter.setPosition(0.01);
+    SmartDashboard.putNumber("manualSpeed", speed);
+
+    if ((turret.getTurretRotation() > turret.leftMaximum) && (speed > 0)) {
+      return;
+    } else if ((-turret.getTurretRotation() > turret.rightMaximum) && (speed < 0)) {
+      return;
+    } else {
+      turret.setRawSpeed(speed);
+    }
   }
 
   // Called once the command ends or is interrupted.

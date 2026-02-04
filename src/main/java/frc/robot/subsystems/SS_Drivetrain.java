@@ -7,7 +7,9 @@ import java.util.function.Supplier;
 
 import com.ctre.phoenix6.SignalLogger;
 import com.ctre.phoenix6.Utils;
+import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.Pigeon2;
+import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModule;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
@@ -123,10 +125,16 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
     Rotation2d gyroAngle;
     double gyroSpeed;
     int loopCount = 0;
-    SwerveModule module0 = getModule(0);
-    SwerveModule module1 = getModule(1);
-    SwerveModule module2 = getModule(2);
-    SwerveModule module3 = getModule(3);
+    SwerveModule<TalonFX, TalonFX, CANcoder> module0 = getModule(0);
+    SwerveModule<TalonFX, TalonFX, CANcoder> module1 = getModule(1);
+    SwerveModule<TalonFX, TalonFX, CANcoder> module2 = getModule(2);
+    SwerveModule<TalonFX, TalonFX, CANcoder> module3 = getModule(3);
+    Translation2d blueHubPose = new Translation2d(4.625594, 4.034536);
+    Translation2d redHubPose = new Translation2d(4.625594, 4.034536);
+    public Translation2d hubPose;
+    Translation2d blueTowerPose = new Translation2d(1.106424, 3.745484);
+    Translation2d redTowerPose = new Translation2d(15.434564, 4.323842 );
+    public Translation2d towerPose;
 
     public DriverStation.Alliance alliance;
 
@@ -222,6 +230,14 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
         poseEstimateAntigua = limelightTableAntigua.getEntry("botpose_orb_wpiblue").getDoubleArray(new double[6]);
         poseEstimateBarbuda = limelightTableBarbuda.getEntry("botpose_orb_wpiblue").getDoubleArray(new double[6]);
         alliance = DriverStation.getAlliance().get();
+        switch (alliance) {
+            case Red:
+                hubPose = redHubPose;
+                towerPose = redTowerPose;
+            case Blue:
+                hubPose = blueHubPose;
+                towerPose = blueTowerPose;
+        }
     }
 
     /**
@@ -342,6 +358,8 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
                 m_hasAppliedOperatorPerspective = true;
             });
         }
+
+        SmartDashboard.putNumber("pidgeonYaw", pidgey.getYaw().getValueAsDouble());
 
 
 

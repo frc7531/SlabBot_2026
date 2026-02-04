@@ -4,8 +4,9 @@
 
 package frc.robot.commands.vision;
 
+import com.ctre.phoenix6.hardware.CANcoder;
+
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.SS_Turret;
 
@@ -16,7 +17,7 @@ public class flipTurret extends Command {
   public SS_Turret turret;
   public PIDController tController = new PIDController(0.1, 0, 0);
   public double tSpeed;
-  public Encoder encoder;
+  public CANcoder encoder;
 
   public flipTurret(SS_Turret ss_turret) {
     // Use addRequirements() here to declare subsystem dependencies.
@@ -34,15 +35,16 @@ public class flipTurret extends Command {
   }
 
   public Command withTarget(int direction, double offset) {
-    tController.setSetpoint(180*direction + 2.5*offset);
+    tController.setSetpoint(0.5*direction + 2*offset);
     return this;
   }
 
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    tSpeed = tController.calculate(encoder.getDistance());
-    turret.setRawSpeed(tSpeed);
+    tSpeed = tController.calculate(turret.getTurretRotation());
+    // turret.setRawSpeed(tSpeed);
+    System.out.println("speed: " + tSpeed);
   }
 
   // Called once the command ends or is interrupted.

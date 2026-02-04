@@ -15,9 +15,18 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
+import frc.robot.commands.moveActuator;
 import frc.robot.commands.vision.aimTurretToTarget;
+import frc.robot.commands.vision.manualShooter;
+import frc.robot.commands.vision.manualTurret;
+import frc.robot.commands.vision.startThroat;
+import frc.robot.commands.vision.stopShooter;
+import frc.robot.commands.vision.stopThroat;
+import frc.robot.commands.vision.stopTurret;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.SS_Drivetrain;
+import frc.robot.subsystems.SS_Shooter;
+import frc.robot.subsystems.SS_Throat;
 import frc.robot.subsystems.SS_Turret;
 import frc.robot.subsystems.SS_Vision;
 
@@ -35,16 +44,27 @@ public class RobotContainer {
     private final Telemetry logger = new Telemetry(MaxSpeed);
 
     private final CommandXboxController joystick = new CommandXboxController(0);
+    private final CommandXboxController joystick2 = new CommandXboxController(1);
 
     public final SS_Vision vision = new SS_Vision();
     public final SS_Drivetrain drivetrain = TunerConstants.createDrivetrain();
+    public final SS_Shooter shooter = new SS_Shooter();
     public final SS_Turret turret = new SS_Turret();
-    public aimTurretToTarget aimCommand = new aimTurretToTarget(drivetrain, turret, joystick);
+    public final SS_Throat throat = new SS_Throat();
+    public aimTurretToTarget aimCommand = new aimTurretToTarget(drivetrain, turret);
     public Command drivetrainDefault = drivetrain.applyRequest(() ->
         drive.withVelocityX(-joystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
              .withVelocityY(-joystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
              .withRotationalRate(-joystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
     );
+    public manualTurret turretForward = new manualTurret(turret).withSpeed(0.1);
+    public manualTurret turretReverse = new manualTurret(turret).withSpeed(-0.1);
+    public stopTurret stopCommand = new stopTurret(turret);
+    public manualShooter shootCommand = new manualShooter(shooter);
+    public moveActuator moveActuator = new moveActuator(shooter);
+    public stopShooter stopSCommand = new stopShooter(shooter);
+    //public stopThroat stopTCommand = new stopThroat(throat);
+    //public startThroat startCommand = new startThroat(throat);
 
 
     public RobotContainer() {
@@ -59,6 +79,10 @@ public class RobotContainer {
             // Drivetrain will execute this command periodically
             drivetrainDefault
         );
+
+        turret.setDefaultCommand(aimCommand);
+        shooter.setDefaultCommand(stopSCommand);
+        //throat.setDefaultCommand(stopTCommand);
 
         // Idle while the robot is disabled. This ensures the configured
         // neutral mode is applied to the drive motors while disabled.
@@ -85,6 +109,11 @@ public class RobotContainer {
         joystick.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
 
         drivetrain.registerTelemetry(logger::telemeterize);
+
+        joystick2.y().whileTrue(turretForward);
+        joystick2.x().whileTrue(turretReverse);
+        joystick2.a().whileTrue(shootCommand);//.alongWith(startCommand));
+        joystick2.b().whileTrue(moveActuator);
     }
 
     public Command getAutonomousCommand() {

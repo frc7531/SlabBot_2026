@@ -5,12 +5,16 @@
 package frc.robot.commands.vision;
 
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.subsystems.SS_Shooter;
 
 /* You should consider using the more terse Command factories API instead https://docs.wpilib.org/en/stable/docs/software/commandbased/organizing-command-based.html#defining-commands */
-public class angleHood extends Command {
-  /** Creates a new angleHood. */
-  public angleHood() {
+public class manualShooter extends Command {
+  public SS_Shooter shooter;
+  /** Creates a new manualShooter. */
+  public manualShooter(SS_Shooter ss_shooter) {
     // Use addRequirements() here to declare subsystem dependencies.
+    addRequirements(ss_shooter);
+    this.shooter = ss_shooter;
   }
 
   // Called when the command is initially scheduled.
@@ -19,7 +23,10 @@ public class angleHood extends Command {
 
   // Called every time the scheduler runs while the command is scheduled.
   @Override
-  public void execute() {}
+  public void execute() {
+    shooter.leftShooter.set(-1);
+    shooter.rightShooter.set(1);
+  }
 
   // Called once the command ends or is interrupted.
   @Override
