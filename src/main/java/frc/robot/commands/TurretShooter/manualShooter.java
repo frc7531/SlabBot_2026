@@ -24,8 +24,8 @@ public class manualShooter extends Command {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    shooter.leftShooter.set(-1);
-    shooter.rightShooter.set(1);
+    shooter.leftShooter.set(-shooter.shooterSpeed.getDouble(0));
+    shooter.rightShooter.set(shooter.shooterSpeed.getDouble(0));
   }
 
   // Called once the command ends or is interrupted.

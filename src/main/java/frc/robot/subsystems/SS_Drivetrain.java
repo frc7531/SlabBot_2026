@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 
 import com.ctre.phoenix6.SignalLogger;
 import com.ctre.phoenix6.Utils;
+import com.ctre.phoenix6.configs.Pigeon2Configuration;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.Pigeon2;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -60,6 +61,7 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
     private Notifier m_simNotifier = null;
     private double m_lastSimTime;
     public final Pigeon2 pidgey = new Pigeon2(50, "SwerveBus");
+    public Pigeon2Configuration pigeonConfig = new Pigeon2Configuration();
 
     /* Blue alliance sees forward as 0 degrees (toward red alliance wall) */
     private static final Rotation2d kBlueAlliancePerspectiveRotation = Rotation2d.kZero;
@@ -97,12 +99,12 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
         kinematics, 
         kBlueAlliancePerspectiveRotation, 
         modulePositions,
-        new Pose2d(1.40, 4.84, new Rotation2d(0))
+        new Pose2d(4.625594, 3.043936, new Rotation2d(0))
     );
 
     public SwerveDrivePoseEstimator poseEstimator = new SwerveDrivePoseEstimator(
         kinematics, 
-        kBlueAlliancePerspectiveRotation, 
+        kBlueAlliancePerspectiveRotation,
         modulePositions, 
         new Pose2d(1.40, 4.84, new Rotation2d(0)), 
         new Matrix<N3, N1>(Nat.N3(), Nat.N1(), new double[] {0.2, 0.2, 0.2}), 
@@ -119,23 +121,20 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
     Field2d limelightFieldBarbuda = new Field2d();
     Field2d limelightFieldAntigua = new Field2d();
     Field2d odometryField = new Field2d();
+    Field2d targetField = new Field2d();
     double[] limelightEstimateAntigua = new double[6];
     double[] limelightEstimateBarbuda = new double[6];
     double stdDev;
     Rotation2d gyroAngle;
     double gyroSpeed;
     int loopCount = 0;
+    public double testYaw = 0;
     SwerveModule<TalonFX, TalonFX, CANcoder> module0 = getModule(0);
     SwerveModule<TalonFX, TalonFX, CANcoder> module1 = getModule(1);
     SwerveModule<TalonFX, TalonFX, CANcoder> module2 = getModule(2);
     SwerveModule<TalonFX, TalonFX, CANcoder> module3 = getModule(3);
-    Translation2d blueHubPose = new Translation2d(4.625594, 4.034536);
-    Translation2d redHubPose = new Translation2d(4.625594, 4.034536);
-    public Translation2d hubPose;
-    Translation2d blueTowerPose = new Translation2d(1.106424, 3.745484);
-    Translation2d redTowerPose = new Translation2d(15.434564, 4.323842 );
-    public Translation2d towerPose;
-
+    public Translation2d hubPose = new Translation2d(4.625594, 4.034536);
+    public Translation2d towerPose = new Translation2d(1.7113, 4.162044);
     public DriverStation.Alliance alliance;
 
     /*
@@ -201,6 +200,7 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
 
     NetworkTable limelightTableAntigua = NetworkTableInstance.getDefault().getTable("limelight-antigua");
     NetworkTable limelightTableBarbuda = NetworkTableInstance.getDefault().getTable("limelight-barbuda");
+    NetworkTable shooter = NetworkTableInstance.getDefault().getTable("Shooter");
     double[] poseEstimateAntigua;
     double[] poseEstimateBarbuda;
 
@@ -229,15 +229,10 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
 
         poseEstimateAntigua = limelightTableAntigua.getEntry("botpose_orb_wpiblue").getDoubleArray(new double[6]);
         poseEstimateBarbuda = limelightTableBarbuda.getEntry("botpose_orb_wpiblue").getDoubleArray(new double[6]);
-        alliance = DriverStation.getAlliance().get();
-        switch (alliance) {
-            case Red:
-                hubPose = redHubPose;
-                towerPose = redTowerPose;
-            case Blue:
-                hubPose = blueHubPose;
-                towerPose = blueTowerPose;
-        }
+        shooter.getEntry("testYaw").setDouble(0.0);
+        pigeonConfig.MountPose.MountPoseRoll = 180;
+        pigeonConfig.MountPose.MountPoseYaw = 0;
+        pidgey.getConfigurator().apply(pigeonConfig);
     }
 
     /**
@@ -312,6 +307,7 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
     public Command applyRequest(Supplier<SwerveRequest> request) {
         return run(() -> this.setControl(request.get()));
     }
+    //-.-- --- ..- / .... .- ...- . / .-. . .- -.. / - .... .. ...
 
     /**
      * Runs the SysId Quasistatic test in the given direction for the routine
@@ -338,6 +334,7 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
 
     @Override
     public void periodic() {
+        alliance = DriverStation.getAlliance().get();
         /*
          * Periodically try to apply the operator perspective.
          * If we haven't applied the operator perspective before, then we should apply
@@ -349,6 +346,8 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
          * This ensures driving behavior doesn't change until an explicit disable event
          * occurs during testing.
          */
+        testYaw = shooter.getEntry("testYaw").getDouble(0.0);
+
         if (!m_hasAppliedOperatorPerspective || DriverStation.isDisabled()) {
             DriverStation.getAlliance().ifPresent(allianceColor -> {
                 setOperatorPerspectiveForward(
@@ -360,16 +359,16 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
         }
 
         SmartDashboard.putNumber("pidgeonYaw", pidgey.getYaw().getValueAsDouble());
-
-
+        SmartDashboard.putNumber("drivetrainYaw", this.getState().Pose.getRotation().getDegrees());
 
         modulePositions[0] = module0.getPosition(true);
         modulePositions[1] = module1.getPosition(true);
         modulePositions[2] = module2.getPosition(true);
         modulePositions[3] = module3.getPosition(true);
 
-        poseEstimator.update(pidgey.getRotation2d(), modulePositions);
-        poseOdometry.update(pidgey.getRotation2d(), modulePositions);
+        Rotation2d gyroAngle = pidgey.getRotation2d();
+        poseEstimator.update(gyroAngle, modulePositions);
+        poseOdometry.update(gyroAngle, modulePositions);
         robotSimPose = poseEstimator.getEstimatedPosition();
 
         switch (alliance) {
@@ -393,12 +392,14 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
         limelightFieldAntigua.setRobotPose(robotLLPoseAntigua);
         limelightFieldBarbuda.setRobotPose(robotLLPoseBarbuda);
         odometryField.setRobotPose(robotOdoPose);
+        targetField.setRobotPose(new Pose2d(towerPose, new Rotation2d(0)));
 
         //Add the fields
         SmartDashboard.putData("estimationField", estimatedField);
         SmartDashboard.putData("limelightFieldAntigua", limelightFieldAntigua);
         SmartDashboard.putData("limelightFieldBarbuda", limelightFieldBarbuda);
         SmartDashboard.putData("odometryField", odometryField);
+        SmartDashboard.putData("targetField", targetField);
     }
 
     private void startSimThread() {
@@ -476,7 +477,7 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
 
     private void updateVisionFromLimelight(String limelightName) {
         LimelightHelpers.SetRobotOrientation(limelightName, 
-            pidgey.getRotation2d().getDegrees(), 
+            pidgey.getRotation2d().getDegrees(),
             pidgey.getAngularVelocityZDevice().getValueAsDouble(), 0, 0, 0, 0);
         
         LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelightName);
@@ -484,9 +485,13 @@ public class SS_Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
         if (mt2 == null || mt2.tagCount == 0) return;
         if (Math.abs(pidgey.getAngularVelocityZDevice().getValueAsDouble()) > 720) return; // Reject during fast rotation
         
-        stdDev = MathUtil.clamp(1.05*mt2.avgTagDist/mt2.tagCount, 0.15, 1.1);
+        stdDev = MathUtil.clamp(1.1*mt2.avgTagDist/mt2.tagCount, 0.35, 1.1);
         poseEstimator.setVisionMeasurementStdDevs(VecBuilder.fill(stdDev, stdDev, 0.5));
-        poseEstimator.addVisionMeasurement(mt2.pose, mt2.timestampSeconds);
+        // Use the vision translation but prefer the Pigeon/IMU for robot heading.
+        // Vision headings can be noisy or use a different convention and were
+        // overwriting the estimator's heading, causing the rotated localization.
+        Pose2d visionPoseUsingGyroHeading = new Pose2d(mt2.pose.getTranslation(), pidgey.getRotation2d());
+        poseEstimator.addVisionMeasurement(visionPoseUsingGyroHeading, mt2.timestampSeconds);
     }
 
     // public void updateOdometry() {

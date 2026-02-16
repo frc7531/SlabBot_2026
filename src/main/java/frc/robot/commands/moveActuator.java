@@ -13,7 +13,6 @@ public class moveActuator extends Command {
   public SS_Shooter shooter;
   public moveActuator(SS_Shooter ss_shooter) {
     // Use addRequirements() here to declare subsystem dependencies.
-    addRequirements(ss_shooter);
     this.shooter = ss_shooter;
   }
 
@@ -24,9 +23,10 @@ public class moveActuator extends Command {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
+    //System.out.println("- .... .. ... / ... .... --- ..- .-.. -.. / .-- --- .-. -.-");
     shooter.leftHoodLifter.setPosition(shooter.actuatorPosition.getDouble(0));
     shooter.rightHoodLifter.setPosition(shooter.actuatorPosition.getDouble(0));
-    System.out.println("Running");
+    //System.out.println("Running");
   }
 
   // Called once the command ends or is interrupted.

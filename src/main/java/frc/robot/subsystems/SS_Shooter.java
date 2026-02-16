@@ -8,6 +8,7 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.PWM;
@@ -46,10 +47,12 @@ public class SS_Shooter extends SubsystemBase {
 
   public NetworkTableInstance inst = NetworkTableInstance.getDefault();
   public NetworkTableEntry actuatorPosition = inst.getTable("Shooter").getEntry("Actuator Position");
+  public NetworkTableEntry shooterSpeed = inst.getTable("Shooter").getEntry("Shooter Speed");
 
   /** Creates a new SS_Shooter. */
   public SS_Shooter() {
     actuatorPosition.setDouble(0.0);
+    shooterSpeed.setDouble(0.0);
     leftShooter.setNeutralMode(NeutralModeValue.Coast);
     rightShooter.setNeutralMode(NeutralModeValue.Coast);
   }
@@ -57,7 +60,8 @@ public class SS_Shooter extends SubsystemBase {
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
-    inst.getTable("Shooter").getEntry("Actuator Position");
+    actuatorPosition = inst.getTable("Shooter").getEntry("Actuator Position");
+    shooterSpeed = inst.getTable("Shooter").getEntry("Shooter Speed");
   }
 
   public double calculateGoalAngle(double distance) {

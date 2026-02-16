@@ -21,24 +21,17 @@ public class startThroat extends Command {
   // Called when the command is initially scheduled.
   @Override
   public void initialize() {
-    throat.timer.stop();
-    throat.timer.reset();
   }
 
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    throat.timer.start();
-    if (throat.timer.hasElapsed(0.8)) {
-      throat.throatMotor.set(0.7);
-    }
+    throat.throatMotor.set(1);
   }
 
   // Called once the command ends or is interrupted.
   @Override
   public void end(boolean interrupted) {
-    throat.timer.stop();
-    throat.timer.reset();
   }
 
   // Returns true when the command should end.

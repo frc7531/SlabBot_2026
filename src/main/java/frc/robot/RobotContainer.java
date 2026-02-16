@@ -10,17 +10,21 @@ import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.commands.moveActuator;
+import frc.robot.commands.Throat.startThroat;
+import frc.robot.commands.Throat.stopThroat;
 import frc.robot.commands.TurretShooter.manualShooter;
 import frc.robot.commands.TurretShooter.manualTurret;
 import frc.robot.commands.TurretShooter.stopShooter;
 import frc.robot.commands.TurretShooter.stopTurret;
 import frc.robot.commands.vision.aimTurretToTarget;
+import frc.robot.commands.vision.alignTower;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.SS_Drivetrain;
 import frc.robot.subsystems.SS_Shooter;
@@ -46,27 +50,31 @@ public class RobotContainer {
 
     public final SS_Vision vision = new SS_Vision();
     public final SS_Drivetrain drivetrain = TunerConstants.createDrivetrain();
-    public final SS_Shooter shooter = new SS_Shooter();
+    //public final SS_Shooter shooter = new SS_Shooter();
     public final SS_Turret turret = new SS_Turret();
-    public final SS_Throat throat = new SS_Throat();
+    //public final SS_Throat throat = new SS_Throat();
     public aimTurretToTarget aimCommand = new aimTurretToTarget(drivetrain, turret);
     public Command drivetrainDefault = drivetrain.applyRequest(() ->
         drive.withVelocityX(-joystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
              .withVelocityY(-joystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
              .withRotationalRate(-joystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
     );
+    public alignTower alignCommand = new alignTower(vision, drivetrain);
     public manualTurret turretForward = new manualTurret(turret).withSpeed(0.1);
     public manualTurret turretReverse = new manualTurret(turret).withSpeed(-0.1);
     public stopTurret stopCommand = new stopTurret(turret);
-    public manualShooter shootCommand = new manualShooter(shooter);
-    public moveActuator moveActuator = new moveActuator(shooter);
-    public stopShooter stopSCommand = new stopShooter(shooter);
-    //public stopThroat stopTCommand = new stopThroat(throat);
-    //public startThroat startCommand = new startThroat(throat);
+    // public manualShooter shootCommand = new manualShooter(shooter);
+    // public moveActuator moveActuator = new moveActuator(shooter);
+    // public stopShooter stopSCommand = new stopShooter(shooter);
+    // public stopThroat stopTCommand = new stopThroat(throat);
+    // public startThroat startCommand = new startThroat(throat);
 
 
     public RobotContainer() {
-        CommandScheduler.getInstance().onCommandInitialize(command -> System.out.println("[CMD INIT] " + command.getName()));
+        CommandScheduler.getInstance().onCommandExecute((command) -> {
+            SmartDashboard.putString("Exec Command", command.getName());
+            System.out.println("CMD EXEC: " + command.getName());
+        });
         configureBindings();
     }
 
@@ -79,7 +87,7 @@ public class RobotContainer {
         );
 
         turret.setDefaultCommand(aimCommand);
-        shooter.setDefaultCommand(stopSCommand);
+        //shooter.setDefaultCommand(stopSCommand);
         //throat.setDefaultCommand(stopTCommand);
 
         // Idle while the robot is disabled. This ensures the configured
@@ -101,17 +109,18 @@ public class RobotContainer {
         joystick.start().and(joystick.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
         joystick.start().and(joystick.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
         joystick.y().whileTrue(drivetrain.pigeonCommand());
-        joystick.x().whileTrue(aimCommand);
+        joystick.x().whileTrue(alignCommand);
 
         // Reset the field-centric heading on left bumper press.
         joystick.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
 
-        drivetrain.registerTelemetry(logger::telemeterize);
-
         joystick2.y().whileTrue(turretForward);
         joystick2.x().whileTrue(turretReverse);
-        joystick2.a().whileTrue(shootCommand);//.alongWith(startCommand));
-        joystick2.b().whileTrue(moveActuator);
+        // joystick2.rightTrigger().whileTrue(shootCommand);
+        // joystick2.leftTrigger().whileTrue(startCommand);
+        // joystick2.b().whileTrue(moveActuator);
+
+        drivetrain.registerTelemetry(logger::telemeterize);
     }
 
     public Command getAutonomousCommand() {

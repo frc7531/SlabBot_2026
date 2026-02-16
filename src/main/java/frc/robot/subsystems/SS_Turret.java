@@ -19,8 +19,9 @@ public class SS_Turret extends SubsystemBase {
   public TalonFX turretMotor = new TalonFX(40);
   public Pigeon2 pidgey = new Pigeon2(50);
   public flipTurret flippy;
-  public final double leftMaximum = 0.4;
-  public final double rightMaximum = -0.15;
+  public final double leftMaximum = 0.5;
+  public final double rightMaximum = -0.5;
+  Translation2d position;
 
   /** Creates a new SS_Turret. */
   public SS_Turret() {
@@ -31,18 +32,19 @@ public class SS_Turret extends SubsystemBase {
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
-    System.out.println(getTurretRotation());
+    getTurretRotation();
   }
 
   // All of these inputs should be relative to the turret, not the motor that drives it
 
   public double getTurretRotation() {
-    SmartDashboard.putNumber("TurretRotation", -0.1*encoder.getPosition().getValueAsDouble());
+    SmartDashboard.putNumber("TurretRotation", -36*encoder.getPosition().getValueAsDouble());
     return -0.1*encoder.getPosition().getValueAsDouble();
   }
 
-  public Translation2d getTurretPosition() {
-    Translation2d position = new Translation2d(0.2032*Math.cos(pidgey.getYaw().getValueAsDouble()), 0.2032*Math.sin(pidgey.getYaw().getValueAsDouble()));
+  public Translation2d getTurretPosition(double yaw) {
+    // Translation2d position = new Translation2d(0.2032*Math.cos(pidgey.getYaw().getValueAsDouble()), 0.2032*Math.sin(pidgey.getYaw().getValueAsDouble()));
+    position = new Translation2d(0.2032*Math.cos(yaw), 0.2032*Math.sin(yaw));
     return position;
   }
 

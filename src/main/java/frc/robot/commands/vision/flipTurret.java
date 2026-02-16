@@ -44,7 +44,7 @@ public class flipTurret extends Command {
   public void execute() {
     tSpeed = tController.calculate(turret.getTurretRotation());
     // turret.setRawSpeed(tSpeed);
-    System.out.println("speed: " + tSpeed);
+    //System.out.println("speed: " + tSpeed);
   }
 
   // Called once the command ends or is interrupted.

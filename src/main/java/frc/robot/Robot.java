@@ -6,6 +6,7 @@ package frc.robot;
 
 import com.ctre.phoenix6.HootAutoReplay;
 
+import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -21,8 +22,11 @@ public class Robot extends TimedRobot {
         .withTimestampReplay()
         .withJoystickReplay();
 
+ 
     public Robot() {
         m_robotContainer = new RobotContainer();
+        DataLogManager.logNetworkTables(true);
+        DataLogManager.start();
     }
 
     @Override
@@ -30,16 +34,20 @@ public class Robot extends TimedRobot {
         CommandScheduler.getInstance().run(); 
         m_timeAndJoystickReplay.update();
         // m_robotContainer.drivetrain.updateOdometry();
+        NetworkTableInstance.getDefault().getTable("limelight-antigua").getEntry("<throttle_set>").setNumber(5);
+        NetworkTableInstance.getDefault().getTable("limelight-barbuda").getEntry("<throttle_set>").setNumber(5);
+        NetworkTableInstance.getDefault().getTable("limelight-antigua").getEntry("pipeline").setNumber(0);
+        NetworkTableInstance.getDefault().getTable("limelight-barbuda").getEntry("pipeline").setNumber(0);
     }
 
     @Override
-    public void disabledInit() {
-        NetworkTableInstance.getDefault().getTable("limelight-barbuda").getEntry("<throttle_set>").setNumber(450);
-        NetworkTableInstance.getDefault().getTable("limelight-antigua").getEntry("<throttle_set>").setNumber(450);
-    }
+    public void disabledInit() {}
 
     @Override
-    public void disabledPeriodic() {}
+    public void disabledPeriodic() {
+        NetworkTableInstance.getDefault().getTable("limelight-barbuda").getEntry("<throttle_set>").setNumber(9999);
+        NetworkTableInstance.getDefault().getTable("limelight-antigua").getEntry("<throttle_set>").setNumber(9999);
+    }
 
     @Override
     public void disabledExit() {}
@@ -51,12 +59,15 @@ public class Robot extends TimedRobot {
         if (m_autonomousCommand != null) {
             CommandScheduler.getInstance().schedule(m_autonomousCommand);
         }
-        NetworkTableInstance.getDefault().getTable("limelight-barbuda").getEntry("<throttle_set>").setNumber(0);
-        NetworkTableInstance.getDefault().getTable("limelight-antigua").getEntry("<throttle_set>").setNumber(0);
     }
 
     @Override
-    public void autonomousPeriodic() {}
+    public void autonomousPeriodic() {
+        NetworkTableInstance.getDefault().getTable("limelight-barbuda").getEntry("<throttle_set>").setNumber(5);
+        NetworkTableInstance.getDefault().getTable("limelight-antigua").getEntry("<throttle_set>").setNumber(5);
+        NetworkTableInstance.getDefault().getTable("limelight-antigua").getEntry("pipeline").setNumber(0);
+        NetworkTableInstance.getDefault().getTable("limelight-barbuda").getEntry("pipeline").setNumber(0);
+    }
 
     @Override
     public void autonomousExit() {}
@@ -66,12 +77,15 @@ public class Robot extends TimedRobot {
         if (m_autonomousCommand != null) {
             CommandScheduler.getInstance().cancel(m_autonomousCommand);
         }
-        NetworkTableInstance.getDefault().getTable("limelight-barbuda").getEntry("<throttle_set>").setNumber(0);
-        NetworkTableInstance.getDefault().getTable("limelight-antigua").getEntry("<throttle_set>").setNumber(0);
     }
 
     @Override
-    public void teleopPeriodic() {}
+    public void teleopPeriodic() {
+        NetworkTableInstance.getDefault().getTable("limelight-barbuda").getEntry("<throttle_set>").setNumber(5);
+        NetworkTableInstance.getDefault().getTable("limelight-antigua").getEntry("<throttle_set>").setNumber(5);
+        NetworkTableInstance.getDefault().getTable("limelight-antigua").getEntry("pipeline").setNumber(0);
+        NetworkTableInstance.getDefault().getTable("limelight-barbuda").getEntry("pipeline").setNumber(0);
+    }
 
     @Override
     public void teleopExit() {}
@@ -79,12 +93,15 @@ public class Robot extends TimedRobot {
     @Override
     public void testInit() {
         CommandScheduler.getInstance().cancelAll();
-        NetworkTableInstance.getDefault().getTable("limelight-barbuda").getEntry("<throttle_set>").setNumber(0);
-        NetworkTableInstance.getDefault().getTable("limelight-antigua").getEntry("<throttle_set>").setNumber(0);
     }
 
     @Override
-    public void testPeriodic() {}
+    public void testPeriodic() {
+        NetworkTableInstance.getDefault().getTable("limelight-barbuda").getEntry("<throttle_set>").setNumber(5);
+        NetworkTableInstance.getDefault().getTable("limelight-antigua").getEntry("<throttle_set>").setNumber(5);
+        NetworkTableInstance.getDefault().getTable("limelight-antigua").getEntry("pipeline").setNumber(0);
+        NetworkTableInstance.getDefault().getTable("limelight-barbuda").getEntry("pipeline").setNumber(0);
+    }
 
     @Override
     public void testExit() {}

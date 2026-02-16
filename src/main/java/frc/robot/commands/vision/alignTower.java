@@ -6,6 +6,8 @@ package frc.robot.commands.vision;
 
 import static edu.wpi.first.units.Units.Meters;
 
+import java.util.spi.CurrencyNameProvider;
+
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import edu.wpi.first.math.controller.PIDController;
@@ -13,6 +15,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.RobotContainer;
 import frc.robot.subsystems.SS_Drivetrain;
@@ -28,18 +31,17 @@ public class alignTower extends Command {
   NetworkTable limelightTableBarbuda = NetworkTableInstance.getDefault().getTable("limelight-barbuda");
   Translation2d estimatedPose;
 
-  PIDController rController = new PIDController(0.1, 0, 0);
-  PIDController xController = new PIDController(0.1, 0, 0);
-  PIDController yController = new PIDController(0.1, 0, 0);
+  PIDController rController = new PIDController(0.08, 0, 0);
+  PIDController xController = new PIDController(1.6, 0, 0);
+  PIDController yController = new PIDController(1.6, 0, 0);
 
   Translation2d targetPose;
   Translation2d poseDifference;
   Double targetXPoseDifference;
   Double targetYPoseDifference;
+  private double targetAngle;
 
-  Rotation2d targetAngle;
-  Rotation2d currentAngle;
-  Rotation2d angleDifference;
+  double currentAngle;
 
   double rSpeed;
   double xSpeed;
@@ -48,7 +50,7 @@ public class alignTower extends Command {
   /** Creates a new alignTower. */
   public alignTower(SS_Vision ss_vision, SS_Drivetrain ss_drivetrain) {
     // Use addRequirements() here to declare subsystem dependencies.
-    addRequirements(ss_vision);
+    addRequirements(ss_vision, ss_drivetrain);
     this.vision = ss_vision;
     this.drivetrain = ss_drivetrain;
   }
@@ -56,6 +58,14 @@ public class alignTower extends Command {
   // Called when the command is initially scheduled.
   @Override
   public void initialize() {
+    rController.setSetpoint(180);
+    rController.setTolerance(0.01);
+
+    xController.setSetpoint(0);
+    xController.setTolerance(0.01);
+
+    yController.setSetpoint(0);
+    yController.setTolerance(0.01);
   }
 
   // Called every time the scheduler runs while the command is scheduled.
@@ -65,21 +75,32 @@ public class alignTower extends Command {
 
     estimatedPose = drivetrain.poseEstimator.getEstimatedPosition().getTranslation();
     poseDifference = targetPose.minus(estimatedPose);
-    targetAngle = poseDifference.getAngle();
 
-    currentAngle = drivetrain.pidgey.getRotation2d();
-    angleDifference = currentAngle.minus(targetAngle);
-    targetXPoseDifference = poseDifference.getMeasureY().in(Meters);
-    targetYPoseDifference = poseDifference.getMeasureX().in(Meters);
+    currentAngle = drivetrain.pidgey.getRotation2d().getDegrees();
+    targetXPoseDifference = poseDifference.getMeasureX().in(Meters);
+    targetYPoseDifference = poseDifference.getMeasureY().in(Meters);
 
-    rSpeed = rController.calculate(angleDifference.getDegrees());
+    // if (currentAngle > 180) {
+    //   targetAngle = 180 - (currentAngle % 180);
+    // } else if (currentAngle < -180) {
+    //   targetAngle = 180 + (currentAngle % 180);
+    // } else {
+    //   targetAngle = currentAngle;
+    // }
+
+    targetAngle = Math.floorMod((int) currentAngle, 360);
+
+    rSpeed = rController.calculate(targetAngle);
     xSpeed = xController.calculate(targetXPoseDifference);
     ySpeed = yController.calculate(targetYPoseDifference);
 
-    drivetrain.applyRequest(() -> 
-        drive.withVelocityX(xSpeed)
-        .withVelocityY(ySpeed)
-        .withRotationalRate(rSpeed));
+    SmartDashboard.putNumber("rSpeed", rSpeed);
+    SmartDashboard.putNumber("xSpeed", xSpeed);
+    SmartDashboard.putNumber("ySpeed", ySpeed);
+    SmartDashboard.putNumber("ccccurrentAngle", currentAngle);
+    SmartDashboard.putNumber("ttttargetAngle", targetAngle);
+
+    drivetrain.setControl(drive.withVelocityX(xSpeed).withVelocityY(ySpeed).withRotationalRate(rSpeed));
   }
 
   // Called once the command ends or is interrupted.
